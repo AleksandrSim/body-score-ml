@@ -8,3 +8,10 @@ uploads/*
 !uploads/.gitkeep
 .DS_Store
 *.log
+
+# Xcode
+ios/**/xcuserdata/
+ios/**/*.xcuserstate
+ios/**/DerivedData/
+ios/build/
+*.xcworkspace/xcuserdata/
