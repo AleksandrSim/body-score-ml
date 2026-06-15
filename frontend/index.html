@@ -17,8 +17,23 @@
       <div class="logo">BODY<span>SCORE</span></div>
       <strong>Drop your photo</strong>
       <span class="muted">JPEG · PNG · WebP — analyzed by Qwen3-VL on-device</span>
-      <button class="cta">Choose file</button>
+      <div class="drop-actions">
+        <button class="cta">Choose file</button>
+        <button class="cta secondary" id="camera-btn">📷 Use camera</button>
+      </div>
       <input type="file" id="file" accept="image/jpeg,image/png,image/webp" hidden />
+    </div>
+  </section>
+
+  <section id="camera" class="camera hidden">
+    <div class="camera-inner">
+      <video id="camera-video" autoplay playsinline></video>
+      <canvas id="camera-canvas" hidden></canvas>
+      <div class="camera-controls">
+        <button id="camera-cancel" class="ghost-btn">Cancel</button>
+        <button id="camera-shutter" class="shutter" aria-label="Capture"></button>
+        <button id="camera-flip" class="ghost-btn">⟲ Flip</button>
+      </div>
     </div>
   </section>
 

@@ -264,3 +264,36 @@ body {
   .footer-grid { grid-template-columns: 1fr; }
   .headline-text { font-size: 28px; }
 }
+
+/* ---------- CAMERA ---------- */
+.drop-actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+.cta.secondary {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border);
+  box-shadow: none;
+}
+.cta.secondary:hover { border-color: var(--accent); background: rgba(124, 242, 195, 0.06); box-shadow: none; }
+
+.camera {
+  position: fixed; inset: 0; z-index: 50;
+  display: flex; align-items: center; justify-content: center;
+  background: #000;
+}
+.camera.hidden { display: none; }
+.camera-inner { position: relative; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
+#camera-video { max-width: 100%; max-height: 100%; object-fit: contain; }
+.camera-controls {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 28px 32px calc(28px + env(safe-area-inset-bottom));
+  background: linear-gradient(to top, rgba(0,0,0,0.65), transparent);
+}
+.shutter {
+  width: 72px; height: 72px; border-radius: 50%;
+  border: 5px solid #fff; background: rgba(255,255,255,0.25);
+  cursor: pointer; transition: transform 0.1s;
+}
+.shutter:hover { transform: scale(1.05); }
+.shutter:active { transform: scale(0.92); background: #fff; }
+.camera-controls .ghost-btn { background: rgba(0,0,0,0.4); }

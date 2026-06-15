@@ -28,6 +28,64 @@ fileInput.addEventListener("change", (e) => { if (e.target.files[0]) handleFile(
 ["dragleave","drop"].forEach((ev) => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.remove("over"); }));
 drop.addEventListener("drop", (e) => { const f = e.dataTransfer.files[0]; if (f) handleFile(f); });
 
+// ---------- Camera capture ----------
+const cameraSection = document.getElementById("camera");
+const cameraBtn = document.getElementById("camera-btn");
+const cameraVideo = document.getElementById("camera-video");
+const cameraCanvas = document.getElementById("camera-canvas");
+const cameraShutter = document.getElementById("camera-shutter");
+const cameraCancel = document.getElementById("camera-cancel");
+const cameraFlip = document.getElementById("camera-flip");
+let cameraStream = null;
+let facingMode = "environment"; // rear by default; Flip toggles to selfie
+
+async function openCamera() {
+  if (!navigator.mediaDevices?.getUserMedia) {
+    alert("Camera not supported in this browser.");
+    return;
+  }
+  try {
+    cameraStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode, width: { ideal: 1280 }, height: { ideal: 1280 } },
+      audio: false,
+    });
+  } catch (err) {
+    alert("Could not access camera: " + err.message + "\n(Camera needs HTTPS or localhost.)");
+    return;
+  }
+  cameraVideo.srcObject = cameraStream;
+  drop.classList.add("hidden");
+  cameraSection.classList.remove("hidden");
+}
+
+function closeCamera() {
+  if (cameraStream) { cameraStream.getTracks().forEach((t) => t.stop()); cameraStream = null; }
+  cameraSection.classList.add("hidden");
+  drop.classList.remove("hidden");
+}
+
+function capturePhoto() {
+  const w = cameraVideo.videoWidth, h = cameraVideo.videoHeight;
+  if (!w || !h) return;
+  cameraCanvas.width = w; cameraCanvas.height = h;
+  cameraCanvas.getContext("2d").drawImage(cameraVideo, 0, 0, w, h);
+  cameraCanvas.toBlob((blob) => {
+    if (!blob) return;
+    const file = new File([blob], "camera-capture.jpg", { type: "image/jpeg" });
+    closeCamera();
+    handleFile(file);
+  }, "image/jpeg", 0.92);
+}
+
+cameraBtn.addEventListener("click", (e) => { e.stopPropagation(); openCamera(); });
+cameraShutter.addEventListener("click", capturePhoto);
+cameraCancel.addEventListener("click", closeCamera);
+cameraFlip.addEventListener("click", async () => {
+  facingMode = facingMode === "environment" ? "user" : "environment";
+  if (cameraStream) cameraStream.getTracks().forEach((t) => t.stop());
+  await openCamera();
+});
+
 resetBtn.addEventListener("click", () => {
   report.classList.add("hidden");
   drop.classList.remove("hidden");
