@@ -167,12 +167,6 @@ body {
 .status { color: var(--muted); font-size: 13px; min-height: 18px; }
 .photo-frame { position: relative; border-radius: 16px; overflow: hidden; background: #000; }
 #preview { display: block; width: 100%; height: auto; }
-#overlay { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
-#overlay rect { fill: none; stroke: var(--accent); stroke-width: 0.005; opacity: 0.85; }
-#overlay text {
-  fill: var(--accent); font: bold 0.022px Inter, sans-serif;
-  paint-order: stroke; stroke: rgba(0,0,0,0.85); stroke-width: 0.004;
-}
 .photo-hint { font-size: 11px; color: var(--muted); letter-spacing: 0.12em; text-transform: uppercase; text-align: center; }
 
 .regions { display: flex; flex-direction: column; gap: 8px; }
@@ -297,3 +291,23 @@ body {
 .shutter:hover { transform: scale(1.05); }
 .shutter:active { transform: scale(0.92); background: #fff; }
 .camera-controls .ghost-btn { background: rgba(0,0,0,0.4); }
+
+/* ---------- PROGRESS BAR ---------- */
+.progress {
+  height: 6px; width: 100%;
+  background: rgba(255,255,255,0.07);
+  border-radius: 999px; overflow: hidden; margin-top: 4px;
+}
+.progress.hidden { display: none; }
+.progress-bar {
+  height: 100%; width: 0%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--accent), var(--accent-2));
+  background-size: 200% 100%;
+  transition: width 0.3s ease-out;
+  animation: progressShimmer 1.4s linear infinite;
+}
+@keyframes progressShimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}

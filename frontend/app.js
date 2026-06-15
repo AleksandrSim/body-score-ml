@@ -3,8 +3,38 @@ const fileInput = document.getElementById("file");
 const ctaBtn = document.querySelector(".cta");
 const report = document.getElementById("report");
 const preview = document.getElementById("preview");
-const overlay = document.getElementById("overlay");
 const statusEl = document.getElementById("status");
+const progressEl = document.getElementById("progress");
+const progressBar = document.getElementById("progress-bar");
+
+// Time-based progress: the backend doesn't stream, so we ease toward ~95%
+// over the expected duration and snap to 100% when the result arrives.
+let progressRAF = null;
+function startProgress() {
+  const start = performance.now();
+  const TAU = 28000; // seconds-scale; ~92% by 75s
+  progressEl.classList.remove("hidden", "done");
+  progressBar.style.width = "0%";
+  cancelAnimationFrame(progressRAF);
+  const tick = (now) => {
+    const elapsed = now - start;
+    const pct = 95 * (1 - Math.exp(-elapsed / TAU));
+    progressBar.style.width = pct.toFixed(1) + "%";
+    statusEl.textContent = `Analyzing… ${Math.round(elapsed / 1000)}s`;
+    progressRAF = requestAnimationFrame(tick);
+  };
+  progressRAF = requestAnimationFrame(tick);
+}
+function finishProgress() {
+  cancelAnimationFrame(progressRAF);
+  progressBar.style.width = "100%";
+  setTimeout(() => progressEl.classList.add("hidden"), 500);
+}
+function resetProgress() {
+  cancelAnimationFrame(progressRAF);
+  progressEl.classList.add("hidden");
+  progressBar.style.width = "0%";
+}
 const overallEl = document.getElementById("overall");
 const ringFill = document.getElementById("ring-fill");
 const headlineEl = document.getElementById("headline");
@@ -89,13 +119,13 @@ cameraFlip.addEventListener("click", async () => {
 resetBtn.addEventListener("click", () => {
   report.classList.add("hidden");
   drop.classList.remove("hidden");
-  overlay.innerHTML = "";
   regionsEl.innerHTML = "";
   prioritiesEl.innerHTML = "";
   strongestEl.innerHTML = "";
   fileInput.value = "";
   overallEl.textContent = "–";
   ringFill.setAttribute("stroke-dashoffset", RING_C);
+  resetProgress();
 });
 
 async function handleFile(file) {
@@ -103,8 +133,8 @@ async function handleFile(file) {
   preview.src = URL.createObjectURL(file);
   drop.classList.add("hidden");
   report.classList.remove("hidden");
-  statusEl.textContent = "Analyzing… first run can take 60–90s";
-  overlay.innerHTML = "";
+  statusEl.textContent = "Analyzing…";
+  startProgress();
   regionsEl.innerHTML = "";
   prioritiesEl.innerHTML = "";
   strongestEl.innerHTML = "";
@@ -119,8 +149,11 @@ async function handleFile(file) {
   try {
     const resp = await fetch("/analyze", { method: "POST", body: fd });
     if (!resp.ok) throw new Error(`${resp.status}: ${await resp.text()}`);
-    render(await resp.json());
+    const data = await resp.json();
+    finishProgress();
+    render(data);
   } catch (err) {
+    resetProgress();
     statusEl.textContent = "";
     headlineEl.textContent = "Error";
     summaryEl.textContent = err.message;
@@ -220,12 +253,7 @@ function render(data) {
     row.addEventListener("click", () => {
       const willOpen = !row.classList.contains("active");
       document.querySelectorAll(".region").forEach((el) => el.classList.remove("active"));
-      if (willOpen) {
-        row.classList.add("active");
-        highlightRegion(key, regions);
-      } else {
-        drawAllBoxes(regions);
-      }
+      if (willOpen) row.classList.add("active");
     });
     regionsEl.appendChild(row);
   });
@@ -243,39 +271,4 @@ function render(data) {
     li.textContent = s.replace(/_/g, " ");
     strongestEl.appendChild(li);
   });
-
-  drawAllBoxes(regions);
-}
-
-function drawAllBoxes(regions) {
-  overlay.innerHTML = "";
-  for (const [key, r] of Object.entries(regions)) {
-    if (!r || !r.bbox) continue;
-    const [x, y, w, h] = r.bbox;
-    if (w < 0.01 || h < 0.01) continue;
-    const [c] = gradeColor(r.score);
-    const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-    rect.setAttribute("x", x); rect.setAttribute("y", y);
-    rect.setAttribute("width", w); rect.setAttribute("height", h);
-    rect.setAttribute("stroke", c);
-    overlay.appendChild(rect);
-  }
-}
-
-function highlightRegion(key, regions) {
-  overlay.innerHTML = "";
-  const r = regions[key];
-  if (!r || !r.bbox) return;
-  const [x, y, w, h] = r.bbox;
-  const [c] = gradeColor(r.score);
-  const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-  rect.setAttribute("x", x); rect.setAttribute("y", y);
-  rect.setAttribute("width", w); rect.setAttribute("height", h);
-  rect.setAttribute("stroke", c);
-  rect.setAttribute("stroke-width", "0.01");
-  overlay.appendChild(rect);
-  const label = document.createElementNS("http://www.w3.org/2000/svg", "text");
-  label.setAttribute("x", x + 0.005); label.setAttribute("y", y + 0.03);
-  label.textContent = `${key.replace(/_/g, " ")} ${r.score ?? "?"}`;
-  overlay.appendChild(label);
 }
