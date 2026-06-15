@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Body Score</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <div class="bg-glow"></div>
+
+  <section id="drop" class="drop">
+    <div class="drop-inner">
+      <div class="logo">BODY<span>SCORE</span></div>
+      <strong>Drop your photo</strong>
+      <span class="muted">JPEG · PNG · WebP — analyzed by Qwen3-VL on-device</span>
+      <button class="cta">Choose file</button>
+      <input type="file" id="file" accept="image/jpeg,image/png,image/webp" hidden />
+    </div>
+  </section>
+
+  <main id="report" class="report hidden">
+    <header class="top">
+      <div class="brand">BODY<span>SCORE</span></div>
+      <button id="reset" class="ghost-btn">↺ New photo</button>
+    </header>
+
+    <section class="hero">
+      <div class="gauge-wrap">
+        <svg class="gauge" viewBox="0 0 200 200">
+          <defs>
+            <linearGradient id="ringGrad" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="#7cf2c3"/>
+              <stop offset="100%" stop-color="#6aa5ff"/>
+            </linearGradient>
+            <filter id="glow">
+              <feGaussianBlur stdDeviation="3" result="b"/>
+              <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+            </filter>
+          </defs>
+          <circle class="ring-bg" cx="100" cy="100" r="85" />
+          <circle id="ring-fill" class="ring-fill" cx="100" cy="100" r="85" filter="url(#glow)" />
+        </svg>
+        <div class="gauge-center">
+          <div id="overall" class="overall-num">–</div>
+          <div class="overall-cap">/ 100</div>
+        </div>
+      </div>
+
+      <div class="hero-side">
+        <div id="headline" class="headline-text">Solid physique</div>
+        <p id="summary" class="summary"></p>
+        <div class="stats">
+          <div class="stat">
+            <div class="stat-num"><span id="bf">–</span><span class="pct">%</span></div>
+            <div class="stat-cap">Body fat</div>
+          </div>
+          <div class="stat">
+            <div id="rank" class="rank">–</div>
+            <div class="stat-cap">Rank</div>
+          </div>
+          <div class="stat">
+            <div id="condition" class="stat-num small">–</div>
+            <div class="stat-cap">Condition</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="body-grid">
+      <div class="photo-card">
+        <div id="status" class="status">Analyzing…</div>
+        <div class="photo-frame">
+          <img id="preview" alt="" />
+          <svg id="overlay" preserveAspectRatio="none" viewBox="0 0 1 1"></svg>
+        </div>
+        <div class="photo-hint">Tap a region below to focus</div>
+      </div>
+
+      <div class="regions" id="regions"></div>
+    </section>
+
+    <section class="footer-grid">
+      <div class="card">
+        <div class="card-title">◆ Priorities</div>
+        <ul id="priorities" class="priorities"></ul>
+      </div>
+      <div class="card">
+        <div class="card-title">✦ Strongest areas</div>
+        <ul id="strongest" class="strongest"></ul>
+      </div>
+    </section>
+  </main>
+
+  <script src="/app.js"></script>
+</body>
+</html>
