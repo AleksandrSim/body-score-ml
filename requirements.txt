@@ -11,3 +11,6 @@ torch>=2.4.0
 torchvision>=0.19.0
 transformers>=4.57.0
 accelerate>=1.0.0
+
+# MLX 4-bit local inference (Apple Silicon only — mirrors the on-device iOS path)
+mlx-vlm>=0.6.3; sys_platform == "darwin" and platform_machine == "arm64"

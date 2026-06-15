@@ -75,6 +75,62 @@ def _hf_generate_sync(system_prompt: str, user_prompt: str, image_bytes: bytes) 
     return _HF_PROCESSOR.decode(new_tokens, skip_special_tokens=True)
 
 
+# ---------- MLX local backend (Apple Silicon; mirrors on-device iOS) ----------
+
+_MLX_MODEL = None
+_MLX_PROCESSOR = None
+_MLX_CONFIG = None
+_MLX_LOCK = threading.Lock()
+
+
+def _ensure_mlx_loaded() -> None:
+    global _MLX_MODEL, _MLX_PROCESSOR, _MLX_CONFIG
+    if _MLX_MODEL is not None:
+        return
+    with _MLX_LOCK:
+        if _MLX_MODEL is not None:
+            return
+        from mlx_vlm import load
+        from mlx_vlm.utils import load_config
+
+        model_id = os.getenv("MLX_MODEL", "mlx-community/Qwen3-VL-2B-Instruct-4bit")
+        print(f"[vlm] loading MLX {model_id}…", flush=True)
+        _MLX_MODEL, _MLX_PROCESSOR = load(model_id)
+        _MLX_CONFIG = load_config(model_id)
+        print("[vlm] MLX model ready", flush=True)
+
+
+def _mlx_generate_sync(system_prompt: str, user_prompt: str, image_bytes: bytes) -> str:
+    import tempfile
+
+    from mlx_vlm import generate
+    from mlx_vlm.prompt_utils import apply_chat_template
+    from PIL import Image
+
+    _ensure_mlx_loaded()
+    img = Image.open(io.BytesIO(image_bytes)).convert("RGB")
+    # Cap resolution to keep vision-token count (and memory) sane — also what we'd
+    # do on a phone. Fewer tokens = faster + less RAM.
+    max_edge = int(os.getenv("MLX_MAX_IMAGE_EDGE", "1024"))
+    if max(img.size) > max_edge:
+        s = max_edge / max(img.size)
+        img = img.resize((int(img.width * s), int(img.height * s)), Image.LANCZOS)
+
+    messages = [
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": user_prompt},
+    ]
+    formatted = apply_chat_template(_MLX_PROCESSOR, _MLX_CONFIG, messages, num_images=1)
+    with tempfile.NamedTemporaryFile(suffix=".jpg", delete=True) as tmp:
+        img.save(tmp.name, "JPEG", quality=92)
+        result = generate(
+            _MLX_MODEL, _MLX_PROCESSOR, formatted, image=[tmp.name],
+            max_tokens=int(os.getenv("MLX_MAX_TOKENS", "1536")),
+            temperature=0.0, verbose=False,
+        )
+    return getattr(result, "text", str(result))
+
+
 # ---------- Remote OpenAI-compatible backend ----------
 
 @dataclass
@@ -168,6 +224,8 @@ async def call_vlm_json(system_prompt: str, user_prompt: str, image_bytes: bytes
     provider = os.getenv("VLM_PROVIDER", "huggingface").lower()
     if provider in {"huggingface", "hf"}:
         content = await asyncio.to_thread(_hf_generate_sync, system_prompt, user_prompt, image_bytes)
+    elif provider == "mlx":
+        content = await asyncio.to_thread(_mlx_generate_sync, system_prompt, user_prompt, image_bytes)
     else:
         cfg = _load_remote(provider)
         data_url = _image_to_data_url(image_bytes, mime)
